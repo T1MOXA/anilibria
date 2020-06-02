@@ -929,6 +929,11 @@ function torrent(){
 			break;
 		}
 	}
+	
+	if (!empty($val['rid']) {
+		APIv2_UpdateTitle($val['rid']);
+	}
+	
 	_message('success');
 }
 
@@ -1660,6 +1665,9 @@ function xrelease(){
 		if(empty($data['ename'])){
 			$data['ename'] = '';
 		}
+
+		APIv2_UpdateTitle($id);
+
 		die(json_encode(['err' => 'ok', 'url' => urlCode($id, $data['ename']),  'mes' => 'success']));
 	}
 }
@@ -2097,6 +2105,9 @@ function updateReleaseAnnounce(){
 	$query->bindParam(':announce', $_POST['announce']);
 	$query->bindParam(':id', $_POST['id']);
 	$query->execute();
+	
+	APIv2_UpdateTitle($_POST['id']);
+	
 	_message('success');
 }
 
@@ -2588,6 +2599,9 @@ function releaseUpdateLast(){
 	$query->bindParam(':time', $var['time']);
 	$query->bindParam(':id', $_POST['id']);
 	$query->execute();
+	
+	APIv2_UpdateTitle($_POST['id']);
+	
 	_message('success');
 }
 
@@ -3100,4 +3114,10 @@ function iframePlayer(){
 		return ['id' => $_GET['id'], 'result' => $result];
 	}
 	return '';
+}
+
+function APIv2_UpdateTitle($title_id) {
+	global $conf;
+	fastcgi_finish_request();
+	file_get_contents("{$conf['api_v2']}/webhook/updateTitle?id={$title_id}");
 }

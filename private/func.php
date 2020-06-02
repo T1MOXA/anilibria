@@ -2719,6 +2719,7 @@ function sendHH(){
 	$title = genRandStr(8, 1);
 	_mail('anilibriahh@protonmail.com', "{$position[$arr['rPosition']]} новая заявка [$title]", $result);
 	_mail('lupin@anilibria.tv', "{$position[$arr['rPosition']]} новая заявка [$title]", $result);
+	_mail($arr['rEmail'], "Ваша заявка на вступление в команду AniLibria принята!", "Ваша заявка на вступление в команду AniLibria под номером #{$position[$arr['rPosition']]} принята и будет рассмотрена в течение месяца (в зависимости от количества заявок).<br/><br/>В случае если ответ так и не придет в указанный срок или возникнут дополнительные вопросы - пишите в поддержку https://t.me/Libria911Bot");
 	_message('success');
 }
 

@@ -1371,11 +1371,14 @@ function showRelease(){
 		$moon = str_replace('{moon}', $release['moonplayer'], getTemplate('moon'));
 	}
 	
-	if(!$var['release']['block']){
+	if(!$var['release']['block'] && $release['bakanim'] == 0 || $user && $user['access'] >= 2) {
 		$page = str_replace('{name}', $release['name'], getTemplate('release'));
-	}else{
+	} elseif (!$var['release']['block'] && $release['bakanim'] == 1) {
+        $page = str_replace('{name}', $release['name'], getTemplate('bakanim'));
+    } else {
 		return getTemplate('block');
 	}
+
 	$page = str_replace('{ename}', $release['ename'], $page);
 	$page = str_replace('{aname}', $release['aname'], $page);
 	$page = str_replace('{fullname}', $name, $page);
@@ -1391,7 +1394,7 @@ function showRelease(){
 	}
 	$str = rtrim($str, ',');
 	
-	$release['other'] = explode(',', "{$release['translator']},{$release['editing']},{$release['decor']},{$release['timing']}");
+	$release['other'] = explode(',', "{$release['translator']},{$release['editing']},{$release['decor']}");
 	foreach($release['other'] as $v){
 		$other[] = trim($v);
 	}
@@ -1416,29 +1419,27 @@ function showRelease(){
 	$page = str_replace('{genre}', $release['genre'], $page);
 	$page = str_replace('{chosen}', getGenreList(), $page);
 	$page = str_replace('{releaseid}', $release['id'], $page);
-	if($user['access'] > 1) {
-		//{VoicedBy} {br}
-		$page = str_replace('{VoicedBy}', "<b>Озвучка:</b> ", $page);
-		$page = str_replace('{voice}', $release['voice'], $page);
-		$page = str_replace('{br}', "<br>", $page);
-	} else {
-		$page = str_replace('{VoicedBy}', "", $page);
-		$page = str_replace('{voice}', "", $page);
-		$page = str_replace('{br}', "", $page);
-	}
+	$page = str_replace('{voice}', $release['voice'], $page);
 	$page = str_replace('{year}', $release['year'], $page);
 	$page = str_replace('{edityear}', $release['edityear'], $page);
 	$page = str_replace('{type}', $release['type'], $page);
-	if($user['access'] > 1) {
-		$page = str_replace('{other}', "<b><a href=\"#\" data-show-other style=\"color: #000;\">Работа над релизом</a>:</b> ".$release['other']."<br>", $page);
+	if($release['other']) {
+		$page = str_replace('{other}', "<b><a href=\"#\" data-show-other style=\"color: #000;\">Работа над субтитрами</a>:</b> ".$release['other']."<br>", $page);
+	} elseif(!$release['other'] && $user['access'] > 1) {
+		$page = str_replace('{other}', "<b>ID Релиза:</b> ".$release['id']."<br>", $page);
 	} else {
 		$page = str_replace('{other}', "", $page);
 	}
-	
 	$page = str_replace('{translator}', $release['translator'], $page);
 	$page = str_replace('{editing}', $release['editing'], $page);
 	$page = str_replace('{decor}', $release['decor'], $page);
-	$page = str_replace('{timing}', $release['timing'], $page);
+	if($release['timing']) {
+		$page = str_replace('{timing}', $release['timing'], $page);
+		$page = str_replace('{timingTitle}', "<b>Тайминг:</b> ", $page);
+	} else {
+		$page = str_replace('{timing}', "", $page);
+		$page = str_replace('{timingTitle}', "", $page);
+	}
 	
 	$page = str_replace('{description}', $release['description'], $page);
 	
@@ -1467,13 +1468,14 @@ function showRelease(){
 	$page = str_replace('{style}', '', $page);
 	
 	$page = str_replace('{xdescription}', parse_code_bb($release['description']), $page);
-	
-	/*if(checkADS()) {
-		$adsshit = "<div id=\"M478527ScriptRootC725422\"> <div id=\"M478527PreloadC725422\"> Loading ADS... </div> <script> (function(){ var D=new Date(),d=document,b='body',ce='createElement',ac='appendChild',st='style',ds='display',n='none',gi='getElementById',lp=d.location.protocol,wp=lp.indexOf('http')==0?lp:'https:'; var i=d[ce]('iframe');i[st][ds]=n;d[gi](\"M478527ScriptRootC725422\")[ac](i);try{var iw=i.contentWindow.document;iw.open();iw.writeln(\"<ht\"+\"ml><bo\"+\"dy></bo\"+\"dy></ht\"+\"ml>\");iw.close();var c=iw[b];} catch(e){var iw=d;var c=d[gi](\"M478527ScriptRootC725422\");}var dv=iw[ce]('div');dv.id=\"MG_ID\";dv[st][ds]=n;dv.innerHTML=725422;c[ac](dv); var s=iw[ce]('script');s.async='async';s.defer='defer';s.charset='utf-8';s.src=wp+\"//jsc.adskeeper.co.uk/a/n/anilibria.tv.725422.js?t=\"+D.getUTCFullYear()+D.getUTCMonth()+D.getUTCDate()+D.getUTCHours();c[ac](s);})(); </script> </div>";
-		$page = str_replace('{newads}', $adsshit, $page);
-	} else {
-		$page = str_replace('{newads}', '', $page);
-	}*/
+
+	if($user && $user['access'] > 1 && $release['bakanim'] == 1) {
+	    //{TeamBlockMsg}
+        $TeamBlockMsg = "<div style='width:100%; height: auto; margin-bottom: 10px; padding: 15px; color:#fff; background-color:#383838; text-align: center;'><span>РЕЛИЗ ЗАБЛОКИРОВАН WAKANIM SAS</span></div>";
+        $page = str_replace('{TeamBlockMsg}', $TeamBlockMsg, $page);
+    } else {
+        $page = str_replace('{TeamBlockMsg}', "", $page);
+    }
 	
 	$button = '';
 	
@@ -1644,7 +1646,7 @@ function xrelease(){
 			}		
 			uploadPoster($id);
 			$sqlUpdate = implode(',', $sql['update']);
-            $query = $db->prepare("UPDATE `xrelease` SET $sqlUpdate WHERE `id` = :id");
+            $query = $db->prepare("UPDATE `xrelease` SET $sqlUpdate, `last_change` = UNIX_TIMESTAMP() WHERE `id` = :id");
 			$query->bindParam(':id', $id);
 		}else{
 			$query = $db->prepare("INSERT INTO `xrelease` ($sqlCol) VALUES ($sqlVal)");
@@ -1660,6 +1662,7 @@ function xrelease(){
 		if(empty($data['ename'])){
 			$data['ename'] = '';
 		}
+		APIv2_UpdateTitle($id);
 		die(json_encode(['err' => 'ok', 'url' => urlCode($id, $data['ename']),  'mes' => 'success']));
 	}
 }
@@ -1857,7 +1860,7 @@ function mp4_link($value){
 	global $conf, $var;
 	$time = $var['time']+60*60*2;
 	$key = str_replace("=", "", strtr(base64_encode(md5("{$time}/videos/{$value}"." {$conf['nginx_secret']}", true)), "+/", "-_"));
-	$url = htmlspecialchars("{$conf['nginx_domain']}/get/$key/$time/$value", ENT_QUOTES, 'UTF-8');
+	$url = htmlspecialchars("{$conf['nginx_download_cache_server']}/get/$key/$time/$value", ENT_QUOTES, 'UTF-8');
 	return $url;
 }
 
@@ -2000,6 +2003,12 @@ function updateYoutube(){
 				}
 				$id = $val['snippet']['resourceId']['videoId'];
 			}
+			if($type == 3){
+				if(empty($val['snippet']['resourceId']['videoId'])){
+					continue;
+				}
+				$id = $val['snippet']['resourceId']['videoId'];
+			}
 			
 			$query = $db->prepare('SELECT `id` FROM `youtube` WHERE `vid` = :vid');
 			$query->bindParam(':vid', $id);
@@ -2021,16 +2030,28 @@ function updateYoutube(){
 	global $conf;
 	
 	$arr = json_decode(file_get_contents("https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId={$conf['youtube_playlist']}&key={$conf['youtube_secret']}"), true);
-	saveYoutube($arr, 2); // playlist
+	saveYoutube($arr, 2); // Anime announce playlist
 	
-	$arr = json_decode(file_get_contents("https://www.googleapis.com/youtube/v3/search?order=date&part=snippet&channelId={$conf['youtube_chanel']}&maxResults=50&key={$conf['youtube_secret']}"), true);
-	saveYoutube($arr, 1); // video
+	//$arr = json_decode(file_get_contents("https://www.googleapis.com/youtube/v3/search?order=date&part=snippet&channelId={$conf['youtube_chanel']}&maxResults=50&key={$conf['youtube_secret']}"), true);
+	//saveYoutube($arr, 1); // video
+	
+	$arr = json_decode(file_get_contents("https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId={$conf['youtube_playlist_main']}&key={$conf['youtube_secret']}"), true);
+    saveYoutube($arr, 3); // AniLibria Main playlist
+
+    $arr = json_decode(file_get_contents("https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId={$conf['youtube_playlist_lupin']}&key={$conf['youtube_secret']}"), true);
+    saveYoutube($arr, 3); // Lupin playlist
+
+    $arr = json_decode(file_get_contents("https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId={$conf['youtube_playlist_sharon']}&key={$conf['youtube_secret']}"), true);
+    saveYoutube($arr, 3); // Sharon playlist
+	
+	$arr = json_decode(file_get_contents("https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId={$conf['youtube_playlist_silv']}&key={$conf['youtube_secret']}"), true);
+    saveYoutube($arr, 3); // Silv playlist
 }
 
 function youtubeShow(){
 	global $db; $i = 0; $arr = []; $arr1 = []; $arr2 = []; $data = []; $result = '';
 	$tmpl = '<td><a href="{url}" target="_blank"><img src="{img}" alt="{alt}" height="245"></a></td>';
-	$query = $db->query('SELECT `vid`, `title` FROM `youtube` WHERE `type` = \'1\' ORDER BY `time` DESC  LIMIT 12');
+	$query = $db->query('SELECT `vid`, `title` FROM `youtube` WHERE `type` = \'1\' OR `type` = \'3\' ORDER BY `time` DESC  LIMIT 12');
 	$query->execute();
 	while($row = $query->fetch()){
 		$arr1[] = ['vid' => $row['vid'], 'title' => $row['title']];
@@ -2093,10 +2114,11 @@ function updateReleaseAnnounce(){
 		_message('wrongRelease', 'error');
 	}
 	$_POST['announce'] = htmlspecialchars($_POST['announce'], ENT_QUOTES, 'UTF-8');
-	$query = $db->prepare('UPDATE `xrelease` SET `announce` = :announce WHERE `id` = :id');
+	$query = $db->prepare('UPDATE `xrelease` SET `announce` = :announce, `last_change` = UNIX_TIMESTAMP() WHERE `id` = :id');
 	$query->bindParam(':announce', $_POST['announce']);
 	$query->bindParam(':id', $_POST['id']);
 	$query->execute();
+	APIv2_UpdateTitle($id);
 	_message('success');
 }
 
@@ -2296,7 +2318,7 @@ function showPosters(){
 		default: $limit = 5; break;
 	}
 	
-	$query = $db->query('SELECT `id`, `name`, `ename`, `code`, `description` FROM `xrelease` ORDER BY `last` DESC LIMIT '.$limit);
+	$query = $db->query('SELECT `id`, `name`, `ename`, `code`, `description`, `bakanim` FROM `xrelease` ORDER BY `last` DESC LIMIT '.$limit);
 	while($row=$query->fetch()){	
 		$img = urlCDN(fileTime('/upload/release/240x350/'.$row['id'].'.jpg'));
 		if(!$img){
@@ -2309,7 +2331,13 @@ function showPosters(){
 		$tmp = str_replace('{runame}', "{$row['name']}", $tmp);
 		$tmp = str_replace('{description}', releaseDescriptionByID($row['id'],179), $tmp);
 		$tmp = str_replace('{series}', releaseSeriesByID($row['id']), $tmp);
-		$tmp = str_replace('{torlink}', getTorrentDownloadLink($row['id']), $tmp);
+		//$tmp = str_replace('{torlink}', getTorrentDownloadLink($row['id']), $tmp);
+        $torbtn = "<a href='".getTorrentDownloadLink($row['id'])."' class='last_tor_button'>СКАЧАТЬ</a>";
+        if($row['bakanim'] == 0) {
+            $tmp = str_replace('{torlink}', $torbtn, $tmp);
+        } else {
+            $tmp = str_replace('{torlink}', "", $tmp);
+        }
 		$result .= $tmp;
 	}
 	return $result;
@@ -2588,6 +2616,7 @@ function releaseUpdateLast(){
 	$query->bindParam(':time', $var['time']);
 	$query->bindParam(':id', $_POST['id']);
 	$query->execute();
+	APIv2_UpdateTitle($id);
 	_message('success');
 }
 
@@ -3100,4 +3129,9 @@ function iframePlayer(){
 		return ['id' => $_GET['id'], 'result' => $result];
 	}
 	return '';
+}
+
+function APIv2_UpdateTitle($title_id) {
+	file_get_contents("{$conf['api_v2']}/webhook/updateTitle?id={$title_id}");
+	fastcgi_finish_request();
 }

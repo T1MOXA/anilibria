@@ -937,39 +937,45 @@ function torrent(){
 
 function downloadTorrent(){
 	global $db, $user, $conf;
-	if(!$user){
-		_message('unauthorized', 'error');
-	}
+	
 	if(empty($_GET['id'])){
 		_message('empty', 'error');
 	}
 	if(!ctype_digit($_GET['id'])){
 		_message('wrong', 'error');
 	}
-	$query = $db->prepare('SELECT `info_hash` FROM `xbt_files` WHERE `fid` = :id');
-	$query->bindParam(':id', $_GET['id']);
-	$query->execute();
-	if($query->rowCount() == 0){
-		_message('wrong', 'error');
-	}
-	$info_hash = $query->fetch()['info_hash'];
-
-	$query = $db->prepare('SELECT `uid` FROM `xbt_users` WHERE `torrent_pass_version` = :id');
-	$query->bindParam(':id', $user['id']);
-	$query->execute();
-	if($query->rowCount() == 0){
-		$query = $db->prepare('INSERT INTO `xbt_users` (`torrent_pass_version`) VALUES (:id)');
+	
+	if($user){
+		$query = $db->prepare('SELECT `info_hash` FROM `xbt_files` WHERE `fid` = :id');
+		$query->bindParam(':id', $_GET['id']);
+		$query->execute();
+		if($query->rowCount() == 0){
+			_message('wrong', 'error');
+		}
+		$info_hash = $query->fetch()['info_hash'];
+	
+		$query = $db->prepare('SELECT `uid` FROM `xbt_users` WHERE `torrent_pass_version` = :id');
 		$query->bindParam(':id', $user['id']);
 		$query->execute();
-		$uid = $db->lastInsertId();
-	}else{
-		$uid = $query->fetch()['uid'];
+		if($query->rowCount() == 0){
+			$query = $db->prepare('INSERT INTO `xbt_users` (`torrent_pass_version`) VALUES (:id)');
+			$query->bindParam(':id', $user['id']);
+			$query->execute();
+			$uid = $db->lastInsertId();
+		}else{
+			$uid = $query->fetch()['uid'];
+		}
+		
+		$key = sprintf('%08x%s', $uid, substr(sha1("{$conf['torrent_secret']} {$user['id']} $uid $info_hash"), 0, 24));
+		
+		$torrent = new Torrent($_SERVER['DOCUMENT_ROOT']."/upload/torrents/{$_GET['id']}.torrent");
+		$torrent->announce(false);
+		$torrent->announce(str_replace('/announce', "/$key/announce", $conf['torrent_announce']));
+		$torrent->send();
+	} else {
+		$torrent = new Torrent($_SERVER['DOCUMENT_ROOT']."/upload/torrents/{$_GET['id']}.torrent");
+		$torrent->send();
 	}
-	$key = sprintf('%08x%s', $uid, substr(sha1("{$conf['torrent_secret']} {$user['id']} $uid $info_hash"), 0, 24));
-	$torrent = new Torrent($_SERVER['DOCUMENT_ROOT']."/upload/torrents/{$_GET['id']}.torrent");
-	$torrent->announce(false);
-	$torrent->announce(str_replace('/announce', "/$key/announce", $conf['torrent_announce']));
-	$torrent->send();
 }
 
 function upload_avatar() {
